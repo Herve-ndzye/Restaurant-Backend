@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3000/restaurant?createDatabaseIfNotExist=true
+    username: root
+    password: admin@123
+  jpa:
+    show-sql: true
