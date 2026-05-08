@@ -1,4 +1,4 @@
-package com.mavic.backend.Model.enums;
+package com.mavic.backend.model.enums;
 
 public enum OrderStatus {
     PENDING,

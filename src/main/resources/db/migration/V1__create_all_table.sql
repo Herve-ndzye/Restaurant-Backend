@@ -4,7 +4,7 @@ CREATE TABLE Customer
     name      VARCHAR(100) NOT NULL,
     phone     VARCHAR(20)  NOT NULL,
     address   TEXT         NOT NULL,
-    createdAt TIMESTAMP    NOT NULL
+    created_at TIMESTAMP   default (curdate())  NOT NULL
 );
 
 CREATE TABLE Restaurant

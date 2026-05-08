@@ -1,4 +1,4 @@
-package com.mavic.backend.Model;
+package com.mavic.backend.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
