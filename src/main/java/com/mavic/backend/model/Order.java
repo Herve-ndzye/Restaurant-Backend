@@ -3,6 +3,8 @@ package com.mavic.backend.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -38,10 +40,12 @@ public class Order {
     @Column(name = "rejectionReason")
     private String rejectionReason;
 
-    @Column(name = "createAt")
+    @CreationTimestamp
+    @Column(name = "create_at")
     private LocalDateTime createAt;
 
-    @Column(name = "updateAt")
+    @UpdateTimestamp
+    @Column(name = "update_at")
     private LocalDateTime updateAt;
 
     @OneToMany(mappedBy = "order")

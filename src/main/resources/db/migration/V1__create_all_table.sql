@@ -13,7 +13,7 @@ CREATE TABLE Restaurant
     name    VARCHAR(100)         NOT NULL,
     cuisine VARCHAR(50)          NOT NULL,
     address TEXT                 NOT NULL,
-    isOpen  BOOLEAN DEFAULT TRUE NULL
+    is_open  BOOLEAN DEFAULT TRUE NULL
 );
 
 CREATE TABLE MenuItem
@@ -24,7 +24,7 @@ CREATE TABLE MenuItem
     description TEXT                                                 NULL,
     price       DECIMAL(10, 2) CHECK (price > 0)                    NULL,
     category    ENUM ('STARTER', 'MAIN', 'DESSERT', 'DRINK', 'SIDE') NOT NULL,
-    isAvailable BOOLEAN DEFAULT TRUE                                 NULL,
+    is_available BOOLEAN DEFAULT TRUE                                 NULL,
     CONSTRAINT MenuItem_restaurant_id_fk
         FOREIGN KEY (restaurant) REFERENCES Restaurant (id)
 );
@@ -35,10 +35,10 @@ CREATE TABLE `order`
     customer        BIGINT                                                              NOT NULL,
     restaurant      BIGINT                                                              NOT NULL,
     status          ENUM ('PENDING','ACCEPTED', 'PREPARING','READY','PICKED_UP', 'DELIVERED', 'CANCELLED','REJECTED') NOT NULL,
-    totalPrice      DECIMAL(10, 2)                                                      NOT NULL,
-    rejectionReason TEXT                                                                NULL,
-    createAt        TIMESTAMP                                                           NOT NULL,
-    updateAt        TIMESTAMP                                                           NOT NULL,
+    total_price      DECIMAL(10, 2)                                                      NOT NULL,
+    rejection_reason TEXT                                                                NULL,
+    create_at        TIMESTAMP                                                           NOT NULL,
+    update_at        TIMESTAMP                                                           NOT NULL,
     CONSTRAINT order_customer_id_fk
         FOREIGN KEY (customer) REFERENCES Customer (id),
     CONSTRAINT order_restaurant_id_fk
