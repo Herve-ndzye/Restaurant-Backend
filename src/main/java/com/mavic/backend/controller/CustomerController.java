@@ -1,10 +1,12 @@
 package com.mavic.backend.controller;
 
+import com.mavic.backend.Service.CustomerAlreadyExists;
+import com.mavic.backend.Service.CustomerNotExist;
+import com.mavic.backend.Service.CustomerService;
+import com.mavic.backend.Service.NoCustomers;
 import com.mavic.backend.dto.newCustomerDto;
 import com.mavic.backend.dto.profileUpdateDto;
-import com.mavic.backend.repository.CustomerRepository;
 import lombok.AllArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,23 +18,14 @@ import java.util.Map;
 @AllArgsConstructor
 @RequestMapping("/api/customer")
 public class CustomerController {
-    private CustomerRepository customerRepository;
-    private CustomerMapper customerMapper;
+    private CustomerService customerService;
 
     @PostMapping("/register")
     public ResponseEntity<?> registerCustomer(
             @RequestBody newCustomerDto customer,
             UriComponentsBuilder uriBuilder
     ){
-        if(customerRepository.findCustomerByPhone(customer.getPhone()).isPresent()){
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(
-                            Map.of("Error : ","Customer already Exists")
-                    );
-        }
-        var newCustomer = customerMapper.toCustomer(customer);
-        customerRepository.save(newCustomer);
+        var newCustomer = customerService.register(customer);
         var uri =uriBuilder.path("/customers/{id}").buildAndExpand(newCustomer.getId()).toUri();
         return ResponseEntity.created(uri).body(newCustomer);
     }
@@ -41,14 +34,7 @@ public class CustomerController {
     public ResponseEntity<?> getCustomer(
             @PathVariable("id") Long id
     ){
-        var customer = customerRepository.findCustomerById(id).orElse(null);
-        if(customer == null ) {
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(
-                            Map.of("Error : ", "Customer does not Exist")
-                    );
-        }
+        var customer = customerService.getCustomer(id);
         return ResponseEntity
                 .status(200)
                 .body(customer);
@@ -59,25 +45,7 @@ public class CustomerController {
             @PathVariable("id") Long id,
             @RequestBody profileUpdateDto profile
     ){
-        var customer = customerRepository.getCustomersById(id).orElse(null);
-        if(customer == null){
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(
-                            Map.of("Error : ", "Customer does not Exist")
-                    );
-        }
-        if(profile.getPhone() == null && profile.getAddress() != null){
-            customer.setAddress(profile.getAddress());
-            customerRepository.save(customer);
-        }else if(profile.getPhone() != null && profile.getAddress() == null){
-            customer.setPhone(profile.getPhone());
-            customerRepository.save(customer);
-        }else{
-            customer.setPhone(profile.getPhone());
-            customer.setAddress(profile.getAddress());
-            customerRepository.save(customer);
-        }
+        var customer = customerService.updateCustomer(id,profile);
         return ResponseEntity
                 .status(200)
                 .body(customer);
@@ -87,19 +55,49 @@ public class CustomerController {
     public ResponseEntity<?> deleteCustomer(
             @PathVariable("id") Long id
     ){
-        var customer = customerRepository.getCustomersById(id).orElse(null);
-        if(customer == null){
-            return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(
-                            Map.of("Error : ", "Customer does not Exist")
-                    );
-        }
-        customerRepository.delete(customer);
+        customerService.deleteCustomer(id);
         return ResponseEntity
                 .status(200)
                 .body(
                         Map.of("Message", "Customer deleted Successfully.")
+                );
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getAllCustomers(
+            @RequestParam("page") int page,
+            @RequestParam("size") int size
+    ){
+        var customers = customerService.getAllCustomers(page,size);
+        return ResponseEntity
+                .ok()
+                .body(customers);
+    }
+
+    @ExceptionHandler(CustomerAlreadyExists.class)
+    public ResponseEntity<?> handleCustomerAlreadyExists(){
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(
+                        Map.of("Error : ", "Customer already exists.")
+                );
+    }
+
+    @ExceptionHandler(CustomerNotExist.class)
+    public ResponseEntity<?> handleCustomerNotExist(){
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(
+                        Map.of("Error : ", "Customer does not Exist")
+                );
+    }
+
+    @ExceptionHandler(NoCustomers.class)
+    public ResponseEntity<?> handleNoCustomers(){
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(
+                        Map.of("Error : ", "No Customers Available")
                 );
     }
 }
