@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class profileUpdateDto {
+public class ProfileUpdateDto {
     private String phone = null;
     private String address = null;
 }

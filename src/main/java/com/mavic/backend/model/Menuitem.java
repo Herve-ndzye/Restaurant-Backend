@@ -1,5 +1,6 @@
 package com.mavic.backend.model;
 
+import com.mavic.backend.model.enums.Category;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,7 +36,7 @@ public class Menuitem {
 
     @Lob
     @Column(name = "category", nullable = false)
-    private String category;
+    private Category category;
 
     @ColumnDefault("1")
     @Column(name = "isAvailable")

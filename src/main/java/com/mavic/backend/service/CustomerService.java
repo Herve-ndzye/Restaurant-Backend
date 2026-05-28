@@ -1,12 +1,12 @@
-package com.mavic.backend.Service;
+package com.mavic.backend.service;
 
 import com.mavic.backend.controller.CustomerMapper;
-import com.mavic.backend.dto.newCustomerDto;
-import com.mavic.backend.dto.profileUpdateDto;
+import com.mavic.backend.dto.NewCustomerDto;
+import com.mavic.backend.dto.ProfileUpdateDto;
+import com.mavic.backend.exception.CustomerException;
 import com.mavic.backend.model.Customer;
 import com.mavic.backend.repository.CustomerRepository;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,8 +20,8 @@ public class CustomerService {
     private CustomerMapper customerMapper;
     private CustomerRepository customerRepository;
 
-    public Customer register(newCustomerDto customer) {
-        if(customerRepository.findCustomerByPhone(customer.getPhone()).isPresent()) throw new CustomerAlreadyExists();
+    public Customer register(NewCustomerDto customer) {
+        if(customerRepository.findCustomerByPhone(customer.getPhone()).isPresent()) throw new CustomerException("Customer already exist");
         var newCustomer = customerMapper.toCustomer(customer);
         customerRepository.save(newCustomer);
         return newCustomer;
@@ -29,13 +29,13 @@ public class CustomerService {
 
     public Customer getCustomer(Long id) {
         var customer = customerRepository.findCustomerById(id).orElse(null);
-        if(customer == null ) throw new CustomerNotExist();
+        if(customer == null ) throw new CustomerException("Customer does not Exist");
         return customer;
     }
 
-    public Customer updateCustomer(Long id, profileUpdateDto profile) {
+    public Customer updateCustomer(Long id, ProfileUpdateDto profile) {
         var customer = customerRepository.getCustomersById(id).orElse(null);
-        if(customer == null) throw new CustomerNotExist();
+        if(customer == null) throw new CustomerException("Customer does not Exist");
         if(profile.getPhone() == null && profile.getAddress() != null){
             customer.setAddress(profile.getAddress());
             customerRepository.save(customer);
@@ -52,7 +52,7 @@ public class CustomerService {
 
     public void deleteCustomer(Long id) {
         var customer = customerRepository.getCustomersById(id).orElse(null);
-        if(customer == null) throw new CustomerNotExist();
+        if(customer == null) throw new CustomerException("Customer does not Exist");
         customerRepository.delete(customer);
     }
 
@@ -63,7 +63,7 @@ public class CustomerService {
                 Sort.by("name").ascending()
         );
         var customers = customerRepository.findAll(pageable);
-        if(customers.isEmpty()) throw new NoCustomers();
+        if(customers.isEmpty()) throw new CustomerException("No Customers Available");
         return customers;
     }
 }

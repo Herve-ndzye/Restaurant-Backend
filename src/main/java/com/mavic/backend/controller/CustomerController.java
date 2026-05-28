@@ -1,11 +1,9 @@
 package com.mavic.backend.controller;
 
-import com.mavic.backend.Service.CustomerAlreadyExists;
-import com.mavic.backend.Service.CustomerNotExist;
-import com.mavic.backend.Service.CustomerService;
-import com.mavic.backend.Service.NoCustomers;
-import com.mavic.backend.dto.newCustomerDto;
-import com.mavic.backend.dto.profileUpdateDto;
+import com.mavic.backend.exception.CustomerException;
+import com.mavic.backend.service.CustomerService;
+import com.mavic.backend.dto.NewCustomerDto;
+import com.mavic.backend.dto.ProfileUpdateDto;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +20,7 @@ public class CustomerController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerCustomer(
-            @RequestBody newCustomerDto customer,
+            @RequestBody NewCustomerDto customer,
             UriComponentsBuilder uriBuilder
     ){
         var newCustomer = customerService.register(customer);
@@ -43,7 +41,7 @@ public class CustomerController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateCustomer(
             @PathVariable("id") Long id,
-            @RequestBody profileUpdateDto profile
+            @RequestBody ProfileUpdateDto profile
     ){
         var customer = customerService.updateCustomer(id,profile);
         return ResponseEntity
@@ -74,30 +72,13 @@ public class CustomerController {
                 .body(customers);
     }
 
-    @ExceptionHandler(CustomerAlreadyExists.class)
-    public ResponseEntity<?> handleCustomerAlreadyExists(){
+    @ExceptionHandler(CustomerException.class)
+    public ResponseEntity<?> handleCustomerException(String message){
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(
-                        Map.of("Error : ", "Customer already exists.")
+                        Map.of("Error : ", message)
                 );
     }
 
-    @ExceptionHandler(CustomerNotExist.class)
-    public ResponseEntity<?> handleCustomerNotExist(){
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(
-                        Map.of("Error : ", "Customer does not Exist")
-                );
-    }
-
-    @ExceptionHandler(NoCustomers.class)
-    public ResponseEntity<?> handleNoCustomers(){
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(
-                        Map.of("Error : ", "No Customers Available")
-                );
-    }
 }
