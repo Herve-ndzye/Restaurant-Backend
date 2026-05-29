@@ -1,5 +1,6 @@
 package com.mavic.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.mavic.backend.model.enums.Category;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -34,7 +35,7 @@ public class Menuitem {
     @Column(name = "price", precision = 10, scale = 2)
     private BigDecimal price;
 
-    @Lob
+    @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false)
     private Category category;
 
@@ -42,6 +43,7 @@ public class Menuitem {
     @Column(name = "isAvailable")
     private Boolean isAvailable;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "menuItem")
     private Set<Orderitem> orderitems = new LinkedHashSet<>();
 

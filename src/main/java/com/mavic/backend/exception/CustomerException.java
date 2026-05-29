@@ -8,6 +8,6 @@ import java.util.Map;
 public class CustomerException extends RuntimeException {
 
     public CustomerException(String message) {
-        throw new CustomerException(message);
+        super(message);
     }
 }

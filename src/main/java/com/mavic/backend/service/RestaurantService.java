@@ -28,6 +28,7 @@ public class RestaurantService {
             if(restaurants.isEmpty()){
                 throw new RestaurantException("Restaurant not found");
             }
+            return restaurants;
         }
         return restaurantRepository.findAllByCuisine(cuisine);
     }

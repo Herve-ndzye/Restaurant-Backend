@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 public class AddressScheduler {
     private CustomerRepository customerRepository;
 
-    @Scheduled(fixedDelay = 10000)
+
     public void notifyArrival(){
         var ruyenziCustomers = customerRepository.findCustomerByAddress("Ruyenzi").orElse(null);
         if(ruyenziCustomers == null){

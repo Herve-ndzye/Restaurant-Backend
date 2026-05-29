@@ -73,11 +73,11 @@ public class CustomerController {
     }
 
     @ExceptionHandler(CustomerException.class)
-    public ResponseEntity<?> handleCustomerException(String message){
+    public ResponseEntity<?> handleCustomerException(CustomerException ex){
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(
-                        Map.of("Error : ", message)
+                        Map.of("Error", ex.getMessage())
                 );
     }
 

@@ -13,7 +13,7 @@ import java.util.Map;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/restaurants")
+@RequestMapping("/api/restaurants")
 public class RestaurantController {
     private RestaurantService restaurantService;
 
@@ -68,10 +68,10 @@ public class RestaurantController {
     }
 
     @ExceptionHandler(RestaurantException.class)
-    public ResponseEntity<?> handleRestaurantException(String message){
+    public ResponseEntity<?> handleRestaurantException(RestaurantException ex){
         return  ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of(
-                        "Error", message
+                        "Error", ex.getMessage()
                 ));
     }
 }
