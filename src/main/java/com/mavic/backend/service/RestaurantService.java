@@ -8,8 +8,11 @@ import com.mavic.backend.model.Restaurant;
 import com.mavic.backend.model.enums.Category;
 import com.mavic.backend.repository.MenuRepository;
 import com.mavic.backend.repository.RestaurantRepository;
+import com.mavic.backend.security.AuditLog;
+import com.mavic.backend.security.SecurityUtils;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -19,8 +22,9 @@ import java.util.List;
 @AllArgsConstructor
 public class RestaurantService {
     private final MenuRepository menuRepository;
-    private RestaurantRepository restaurantRepository;
-    private RestaurantMapper restaurantMapper;
+    private final RestaurantRepository restaurantRepository;
+    private final RestaurantMapper restaurantMapper;
+    private final SecurityUtils securityUtils;
 
     public List<Restaurant> getRestaurants(String cuisine) {
         if(cuisine == null){
@@ -53,21 +57,34 @@ public class RestaurantService {
         return menu;
     }
 
+    @AuditLog(action = "ADD_MENU_ITEM")
     public void addMenuItem(Long id, @Valid NewMenuItemDto menuItem) {
         var restaurant = restaurantRepository.findById(id).orElse(null);
         if(restaurant == null){
             throw new RestaurantException("Restaurant not found");
         }
+        
+        // Validate ownership: only restaurant admin can add menu items
+        if (!securityUtils.isRestaurantAdmin(id)) {
+            throw new AccessDeniedException("You can only add menu items to your own restaurant");
+        }
+        
         if(!Category.exists(menuItem.getCategory())){
             throw new RestaurantException("Category does not exist");
         }
         menuRepository.save(restaurantMapper.toMenuItem(menuItem, restaurant));
     }
 
+    @AuditLog(action = "UPDATE_MENU_ITEM")
     public void updateMenuItem(Long id, @Valid NewMenuItemDto menuItem) {
         var existingMenuItem = menuRepository.findById(id).orElse(null);
         if(existingMenuItem == null){
             throw new RestaurantException("Menu item not found");
+        }
+        
+        // Validate ownership: only restaurant admin can update menu items
+        if (!securityUtils.isRestaurantAdmin(existingMenuItem.getRestaurant().getId())) {
+            throw new AccessDeniedException("You can only update menu items for your own restaurant");
         }
         
         // Update fields if provided
@@ -93,10 +110,16 @@ public class RestaurantService {
         menuRepository.save(existingMenuItem);
     }
 
+    @AuditLog(action = "DELETE_MENU_ITEM")
     public void deleteMenuItem(Long id) {
         var menuItem = menuRepository.findById(id).orElse(null);
         if(menuItem == null){
             throw new RestaurantException("Menu item not found");
+        }
+        
+        // Validate ownership: only restaurant admin can delete menu items
+        if (!securityUtils.isRestaurantAdmin(menuItem.getRestaurant().getId())) {
+            throw new AccessDeniedException("You can only delete menu items from your own restaurant");
         }
         
         // Soft delete: set isAvailable to false

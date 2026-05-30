@@ -6,19 +6,22 @@ import com.mavic.backend.dto.ProfileUpdateDto;
 import com.mavic.backend.exception.CustomerException;
 import com.mavic.backend.model.Customer;
 import com.mavic.backend.repository.CustomerRepository;
+import com.mavic.backend.security.SecurityUtils;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 @AllArgsConstructor
 @Service
 public class CustomerService {
 
-    private CustomerMapper customerMapper;
-    private CustomerRepository customerRepository;
+    private final CustomerMapper customerMapper;
+    private final CustomerRepository customerRepository;
+    private final SecurityUtils securityUtils;
 
     public Customer register(NewCustomerDto customer) {
         if(customerRepository.findCustomerByPhone(customer.getPhone()).isPresent()) throw new CustomerException("Customer already exist");
@@ -28,12 +31,22 @@ public class CustomerService {
     }
 
     public Customer getCustomer(Long id) {
+        // Validate ownership: customers can only view their own profile
+        if (!securityUtils.isCustomerOwner(id)) {
+            throw new AccessDeniedException("You can only view your own profile");
+        }
+        
         var customer = customerRepository.findCustomerById(id).orElse(null);
         if(customer == null ) throw new CustomerException("Customer does not Exist");
         return customer;
     }
 
     public Customer updateCustomer(Long id, ProfileUpdateDto profile) {
+        // Validate ownership: customers can only update their own profile
+        if (!securityUtils.isCustomerOwner(id)) {
+            throw new AccessDeniedException("You can only update your own profile");
+        }
+        
         var customer = customerRepository.getCustomersById(id).orElse(null);
         if(customer == null) throw new CustomerException("Customer does not Exist");
         if(profile.getPhone() == null && profile.getAddress() != null){
@@ -51,6 +64,11 @@ public class CustomerService {
     }
 
     public void deleteCustomer(Long id) {
+        // Validate ownership: customers can only delete their own profile
+        if (!securityUtils.isCustomerOwner(id)) {
+            throw new AccessDeniedException("You can only delete your own profile");
+        }
+        
         var customer = customerRepository.getCustomersById(id).orElse(null);
         if(customer == null) throw new CustomerException("Customer does not Exist");
         customerRepository.delete(customer);

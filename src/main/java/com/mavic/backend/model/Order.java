@@ -1,5 +1,7 @@
 package com.mavic.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.mavic.backend.model.enums.OrderStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,14 +31,13 @@ public class Order {
     @JoinColumn(name = "restaurant")
     private Restaurant restaurant;
 
-    @Lob
-    @Column(name = "status")
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private OrderStatus status;
 
-    @Column(name = "totalPrice")
+    @Column(name = "totalPrice", nullable = false)
     private BigDecimal totalPrice;
 
-    @Lob
     @Column(name = "rejectionReason")
     private String rejectionReason;
 
@@ -48,7 +49,8 @@ public class Order {
     @Column(name = "update_at")
     private LocalDateTime updateAt;
 
-    @OneToMany(mappedBy = "order")
+    @JsonIgnore
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
     private Set<Orderitem> orderitems = new LinkedHashSet<>();
 
 }

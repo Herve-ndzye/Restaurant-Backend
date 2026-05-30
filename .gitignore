@@ -34,6 +34,7 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
+Restaurant_Order_System_SRS.md
 
 # Gradle
 .gradle
@@ -84,3 +85,5 @@ Desktop.ini
 # Application specific
 application-local.properties
 application-local.yml
+.env
+.env.local
