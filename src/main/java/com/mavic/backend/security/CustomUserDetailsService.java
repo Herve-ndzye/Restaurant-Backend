@@ -26,7 +26,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .password(user.getPassword())
                 .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole().name())))
                 .accountExpired(false)
-                .accountLocked(!user.getIsActive())
+                .accountLocked(user.isAccountLocked() || !user.getIsActive())
                 .credentialsExpired(false)
                 .disabled(!user.getIsActive())
                 .build();

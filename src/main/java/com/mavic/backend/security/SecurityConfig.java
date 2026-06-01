@@ -64,6 +64,10 @@ public class SecurityConfig {
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/restaurants/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        
+                        // Swagger/OpenAPI endpoints
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
                         // Customer endpoints
                         .requestMatchers("/api/customer/**").hasRole("CUSTOMER")

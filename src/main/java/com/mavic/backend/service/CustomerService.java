@@ -5,7 +5,9 @@ import com.mavic.backend.dto.NewCustomerDto;
 import com.mavic.backend.dto.ProfileUpdateDto;
 import com.mavic.backend.exception.CustomerException;
 import com.mavic.backend.model.Customer;
+import com.mavic.backend.model.User;
 import com.mavic.backend.repository.CustomerRepository;
+import com.mavic.backend.repository.UserRepository;
 import com.mavic.backend.security.SecurityUtils;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,11 +24,21 @@ public class CustomerService {
     private final CustomerMapper customerMapper;
     private final CustomerRepository customerRepository;
     private final SecurityUtils securityUtils;
+    private final UserRepository userRepository;
 
     public Customer register(NewCustomerDto customer) {
         if(customerRepository.findCustomerByPhone(customer.getPhone()).isPresent()) throw new CustomerException("Customer already exist");
         var newCustomer = customerMapper.toCustomer(customer);
         customerRepository.save(newCustomer);
+        
+        try {
+            User currentUser = securityUtils.getCurrentUser();
+            currentUser.setCustomerId(newCustomer.getId());
+            userRepository.save(currentUser);
+        } catch (Exception e) {
+            // Log or ignore if called out of authenticated context
+        }
+        
         return newCustomer;
     }
 
@@ -49,15 +61,18 @@ public class CustomerService {
         
         var customer = customerRepository.getCustomersById(id).orElse(null);
         if(customer == null) throw new CustomerException("Customer does not Exist");
-        if(profile.getPhone() == null && profile.getAddress() != null){
-            customer.setAddress(profile.getAddress());
-            customerRepository.save(customer);
-        }else if(profile.getPhone() != null && profile.getAddress() == null){
+        
+        boolean updated = false;
+        if(profile.getPhone() != null && !profile.getPhone().trim().isEmpty()){
             customer.setPhone(profile.getPhone());
-            customerRepository.save(customer);
-        }else{
-            customer.setPhone(profile.getPhone());
+            updated = true;
+        }
+        if(profile.getAddress() != null && !profile.getAddress().trim().isEmpty()){
             customer.setAddress(profile.getAddress());
+            updated = true;
+        }
+        
+        if (updated) {
             customerRepository.save(customer);
         }
         return customer;
