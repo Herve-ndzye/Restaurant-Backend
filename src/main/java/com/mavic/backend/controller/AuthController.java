@@ -3,6 +3,7 @@ package com.mavic.backend.controller;
 import com.mavic.backend.dto.AuthResponse;
 import com.mavic.backend.dto.LoginRequest;
 import com.mavic.backend.dto.RegisterRequest;
+import com.mavic.backend.exception.AccountLockedException;
 import com.mavic.backend.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -137,6 +139,26 @@ public class AuthController {
         try {
             AuthResponse response = authService.login(request);
             return ResponseEntity.ok(response);
+        } catch (LockedException e) {
+            return ResponseEntity
+                    .status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (AccountLockedException e) {
+            if (e.isLocked()) {
+                return ResponseEntity
+                        .status(HttpStatus.FORBIDDEN)
+                        .body(Map.of(
+                                "error", e.getMessage(),
+                                "locked", true
+                        ));
+            } else {
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of(
+                                "error", e.getMessage(),
+                                "attemptsRemaining", e.getAttemptsRemaining()
+                        ));
+            }
         } catch (RuntimeException e) {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)

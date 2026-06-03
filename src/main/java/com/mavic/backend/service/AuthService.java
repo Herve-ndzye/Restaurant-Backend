@@ -3,6 +3,7 @@ package com.mavic.backend.service;
 import com.mavic.backend.dto.AuthResponse;
 import com.mavic.backend.dto.LoginRequest;
 import com.mavic.backend.dto.RegisterRequest;
+import com.mavic.backend.exception.AccountLockedException;
 import com.mavic.backend.model.User;
 import com.mavic.backend.model.enums.UserRole;
 import com.mavic.backend.repository.UserRepository;
@@ -70,7 +71,6 @@ public class AuthService {
     }
 
     @AuditLog(action = "USER_LOGIN")
-    @Transactional
     public AuthResponse login(LoginRequest request) {
         // Get user first to check account status
         User user = userRepository.findByUsername(request.getUsername())
@@ -93,8 +93,7 @@ public class AuthService {
 
             // Reset failed attempts on successful login
             if (user.getFailedLoginAttempts() > 0) {
-                user.resetFailedAttempts();
-                userRepository.save(user);
+                resetFailedAttemptsInNewTransaction(user.getId());
             }
 
             log.info("Successful login for user: {}", user.getUsername());
@@ -111,24 +110,50 @@ public class AuthService {
             );
 
         } catch (BadCredentialsException e) {
-            // Increment failed attempts
-            handleFailedLogin(user);
-            throw new BadCredentialsException("Invalid username or password");
+            // Handle failed login in a separate transaction
+            handleFailedLoginInNewTransaction(user.getId());
+            // This will never be reached as handleFailedLoginInNewTransaction throws exception
+            return null;
         }
     }
 
-    private void handleFailedLogin(User user) {
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public void resetFailedAttemptsInNewTransaction(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        user.resetFailedAttempts();
+        userRepository.saveAndFlush(user);
+    }
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public void handleFailedLoginInNewTransaction(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow();
+        
         user.incrementFailedAttempts();
+        int attemptsRemaining = MAX_FAILED_ATTEMPTS - user.getFailedLoginAttempts();
         
         if (user.getFailedLoginAttempts() >= MAX_FAILED_ATTEMPTS) {
             user.lockAccount(LOCKOUT_DURATION_MINUTES);
             log.warn("Account locked for user: {} after {} failed attempts", 
                     user.getUsername(), MAX_FAILED_ATTEMPTS);
+            userRepository.saveAndFlush(user);
+            
+            throw new AccountLockedException(
+                    String.format("Account has been locked due to %d failed login attempts. Please try again after %d minutes.", 
+                            MAX_FAILED_ATTEMPTS, LOCKOUT_DURATION_MINUTES),
+                    0,
+                    true
+            );
         } else {
             log.warn("Failed login attempt {} of {} for user: {}", 
                     user.getFailedLoginAttempts(), MAX_FAILED_ATTEMPTS, user.getUsername());
+            userRepository.saveAndFlush(user);
+            
+            throw new AccountLockedException(
+                    String.format("Invalid username or password. Warning: %d attempt%s remaining before account lockout.", 
+                            attemptsRemaining, attemptsRemaining == 1 ? "" : "s"),
+                    attemptsRemaining,
+                    false
+            );
         }
-        
-        userRepository.save(user);
     }
 }
