@@ -1,12 +1,20 @@
 package com.mavic.backend.service;
 
-import com.mavic.backend.dto.OrderRequest;
-import com.mavic.backend.exception.OrderException;
-import com.mavic.backend.model.*;
-import com.mavic.backend.model.enums.Category;
-import com.mavic.backend.model.enums.OrderStatus;
-import com.mavic.backend.repository.*;
-import com.mavic.backend.security.SecurityUtils;
+import com.mavic.backend.order.dto.OrderRequest;
+import com.mavic.backend.order.exception.OrderException;
+import com.mavic.backend.customer.model.Customer;
+import com.mavic.backend.restaurant.model.Restaurant;
+import com.mavic.backend.restaurant.model.Menuitem;
+import com.mavic.backend.order.model.Order;
+import com.mavic.backend.order.model.Orderitem;
+import com.mavic.backend.common.enums.Category;
+import com.mavic.backend.common.enums.OrderStatus;
+import com.mavic.backend.order.repository.OrderRepository;
+import com.mavic.backend.customer.repository.CustomerRepository;
+import com.mavic.backend.restaurant.repository.RestaurantRepository;
+import com.mavic.backend.restaurant.repository.MenuRepository;
+import com.mavic.backend.common.security.SecurityUtils;
+import com.mavic.backend.order.service.OrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

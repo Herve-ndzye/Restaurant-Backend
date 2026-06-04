@@ -1,12 +1,14 @@
 package com.mavic.backend.service;
 
-import com.mavic.backend.dto.AuthResponse;
-import com.mavic.backend.dto.LoginRequest;
-import com.mavic.backend.dto.RegisterRequest;
-import com.mavic.backend.model.User;
-import com.mavic.backend.model.enums.UserRole;
-import com.mavic.backend.repository.UserRepository;
-import com.mavic.backend.security.JwtUtil;
+import com.mavic.backend.auth.dto.AuthResponse;
+import com.mavic.backend.auth.dto.LoginRequest;
+import com.mavic.backend.auth.dto.RegisterRequest;
+import com.mavic.backend.auth.model.User;
+import com.mavic.backend.common.enums.UserRole;
+import com.mavic.backend.auth.repository.UserRepository;
+import com.mavic.backend.common.security.JwtUtil;
+import com.mavic.backend.auth.service.AuthService;
+import com.mavic.backend.auth.exception.AccountLockedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -125,11 +127,12 @@ class AuthServiceTest {
         request.setPassword("wrongPassword");
 
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         doThrow(new BadCredentialsException("Bad credentials"))
                 .when(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
 
-        assertThrows(BadCredentialsException.class, () -> authService.login(request));
-        verify(userRepository).save(user);
+        assertThrows(AccountLockedException.class, () -> authService.login(request));
+        verify(userRepository).saveAndFlush(user);
         assertEquals(1, user.getFailedLoginAttempts());
     }
 }

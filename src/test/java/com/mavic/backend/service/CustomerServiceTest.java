@@ -1,14 +1,15 @@
 package com.mavic.backend.service;
 
-import com.mavic.backend.controller.CustomerMapper;
-import com.mavic.backend.dto.NewCustomerDto;
-import com.mavic.backend.dto.ProfileUpdateDto;
-import com.mavic.backend.exception.CustomerException;
-import com.mavic.backend.model.Customer;
-import com.mavic.backend.model.User;
-import com.mavic.backend.repository.CustomerRepository;
-import com.mavic.backend.repository.UserRepository;
-import com.mavic.backend.security.SecurityUtils;
+import com.mavic.backend.customer.mapper.CustomerMapper;
+import com.mavic.backend.customer.dto.NewCustomerDto;
+import com.mavic.backend.customer.dto.ProfileUpdateDto;
+import com.mavic.backend.customer.exception.CustomerException;
+import com.mavic.backend.customer.model.Customer;
+import com.mavic.backend.auth.model.User;
+import com.mavic.backend.customer.repository.CustomerRepository;
+import com.mavic.backend.auth.repository.UserRepository;
+import com.mavic.backend.common.security.SecurityUtils;
+import com.mavic.backend.customer.service.CustomerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

@@ -1,14 +1,15 @@
 package com.mavic.backend.service;
 
-import com.mavic.backend.controller.RestaurantMapper;
-import com.mavic.backend.dto.NewMenuItemDto;
-import com.mavic.backend.exception.RestaurantException;
-import com.mavic.backend.model.Menuitem;
-import com.mavic.backend.model.Restaurant;
-import com.mavic.backend.model.enums.Category;
-import com.mavic.backend.repository.MenuRepository;
-import com.mavic.backend.repository.RestaurantRepository;
-import com.mavic.backend.security.SecurityUtils;
+import com.mavic.backend.restaurant.mapper.RestaurantMapper;
+import com.mavic.backend.restaurant.dto.NewMenuItemDto;
+import com.mavic.backend.restaurant.exception.RestaurantException;
+import com.mavic.backend.restaurant.model.Menuitem;
+import com.mavic.backend.restaurant.model.Restaurant;
+import com.mavic.backend.common.enums.Category;
+import com.mavic.backend.restaurant.repository.MenuRepository;
+import com.mavic.backend.restaurant.repository.RestaurantRepository;
+import com.mavic.backend.common.security.SecurityUtils;
+import com.mavic.backend.restaurant.service.RestaurantService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

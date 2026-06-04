@@ -1,0 +1,129 @@
+package com.mavic.backend.restaurant.service;
+
+import com.mavic.backend.restaurant.mapper.RestaurantMapper;
+import com.mavic.backend.restaurant.dto.NewMenuItemDto;
+import com.mavic.backend.restaurant.exception.RestaurantException;
+import com.mavic.backend.restaurant.model.Menuitem;
+import com.mavic.backend.restaurant.model.Restaurant;
+import com.mavic.backend.restaurant.repository.MenuRepository;
+import com.mavic.backend.restaurant.repository.RestaurantRepository;
+import com.mavic.backend.common.enums.Category;
+import com.mavic.backend.common.security.AuditLog;
+import com.mavic.backend.common.security.SecurityUtils;
+import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+@Service
+@AllArgsConstructor
+public class RestaurantService {
+    private final MenuRepository menuRepository;
+    private final RestaurantRepository restaurantRepository;
+    private final RestaurantMapper restaurantMapper;
+    private final SecurityUtils securityUtils;
+
+    public List<Restaurant> getRestaurants(String cuisine) {
+        if(cuisine == null){
+            var restaurants = restaurantRepository.findByIsOpen(Boolean.TRUE);
+            if(restaurants.isEmpty()){
+                throw new RestaurantException("Restaurant not found");
+            }
+            return restaurants;
+        }
+        return restaurantRepository.findAllByCuisine(cuisine);
+    }
+
+    public Restaurant getRestaurantById(Long id) {
+        var restaurant = restaurantRepository.findById(id).orElse(null);
+        if(restaurant == null){
+            throw new RestaurantException("Restaurant not found");
+        }
+        return restaurant;
+    }
+
+    public List<Menuitem> getRestaurantMenu(Long id) {
+        var restaurant = restaurantRepository.findById(id).orElse(null);
+        if(restaurant == null){
+            throw new RestaurantException("Restaurant not found");
+        }
+        var menu = menuRepository.findByRestaurantIdAndIsAvailable(id,true);
+        if(menu == null) {
+            throw new RestaurantException("Menu not found");
+        }
+        return menu;
+    }
+
+    @AuditLog(action = "ADD_MENU_ITEM")
+    public void addMenuItem(Long id, @Valid NewMenuItemDto menuItem) {
+        var restaurant = restaurantRepository.findById(id).orElse(null);
+        if(restaurant == null){
+            throw new RestaurantException("Restaurant not found");
+        }
+        
+        // Validate ownership: only restaurant admin can add menu items
+        if (!securityUtils.isRestaurantAdmin(id)) {
+            throw new AccessDeniedException("You can only add menu items to your own restaurant");
+        }
+        
+        if(!Category.exists(menuItem.getCategory())){
+            throw new RestaurantException("Category does not exist");
+        }
+        menuRepository.save(restaurantMapper.toMenuItem(menuItem, restaurant));
+    }
+
+    @AuditLog(action = "UPDATE_MENU_ITEM")
+    public void updateMenuItem(Long id, @Valid NewMenuItemDto menuItem) {
+        var existingMenuItem = menuRepository.findById(id).orElse(null);
+        if(existingMenuItem == null){
+            throw new RestaurantException("Menu item not found");
+        }
+        
+        // Validate ownership: only restaurant admin can update menu items
+        if (!securityUtils.isRestaurantAdmin(existingMenuItem.getRestaurant().getId())) {
+            throw new AccessDeniedException("You can only update menu items for your own restaurant");
+        }
+        
+        // Update fields if provided
+        if(menuItem.getName() != null){
+            existingMenuItem.setName(menuItem.getName());
+        }
+        if(menuItem.getDescription() != null){
+            existingMenuItem.setDescription(menuItem.getDescription());
+        }
+        if(menuItem.getPrice() != null){
+            if(menuItem.getPrice().compareTo(BigDecimal.ZERO) <= 0){
+                throw new RestaurantException("Price must be > 0");
+            }
+            existingMenuItem.setPrice(menuItem.getPrice());
+        }
+        if(menuItem.getCategory() != null){
+            if(!Category.exists(menuItem.getCategory())){
+                throw new RestaurantException("Category does not exist");
+            }
+            existingMenuItem.setCategory(Category.valueOf(menuItem.getCategory()));
+        }
+        
+        menuRepository.save(existingMenuItem);
+    }
+
+    @AuditLog(action = "DELETE_MENU_ITEM")
+    public void deleteMenuItem(Long id) {
+        var menuItem = menuRepository.findById(id).orElse(null);
+        if(menuItem == null){
+            throw new RestaurantException("Menu item not found");
+        }
+        
+        // Validate ownership: only restaurant admin can delete menu items
+        if (!securityUtils.isRestaurantAdmin(menuItem.getRestaurant().getId())) {
+            throw new AccessDeniedException("You can only delete menu items from your own restaurant");
+        }
+        
+        // Soft delete: set isAvailable to false
+        menuItem.setIsAvailable(false);
+        menuRepository.save(menuItem);
+    }
+}

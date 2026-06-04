@@ -1,7 +1,7 @@
 package com.mavic.backend.practice;
 
-import com.mavic.backend.model.Customer;
-import com.mavic.backend.repository.CustomerRepository;
+import com.mavic.backend.customer.model.Customer;
+import com.mavic.backend.customer.repository.CustomerRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
