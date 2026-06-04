@@ -7,6 +7,9 @@ spring:
     show-sql: ${SHOW_SQL:false}
     hibernate:
       ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyJpaCompliantImpl
   flyway:
     enabled: true
     baseline-on-migrate: true

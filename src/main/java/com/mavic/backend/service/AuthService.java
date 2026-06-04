@@ -51,8 +51,16 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setRole(UserRole.valueOf(request.getRole()));
         user.setIsActive(true);
-        user.setCustomerId(request.getCustomerId());
-        user.setRestaurantId(request.getRestaurantId());
+        
+        // Only set customerId if it's provided and not null/zero
+        if (request.getCustomerId() != null && request.getCustomerId() > 0) {
+            user.setCustomerId(request.getCustomerId());
+        }
+        
+        // Only set restaurantId if it's provided and not null/zero
+        if (request.getRestaurantId() != null && request.getRestaurantId() > 0) {
+            user.setRestaurantId(request.getRestaurantId());
+        }
 
         user = userRepository.save(user);
 

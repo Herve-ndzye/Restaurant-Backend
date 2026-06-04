@@ -147,52 +147,6 @@ public class OrderController {
         return ResponseEntity.ok(Map.of("message", "Order cancelled successfully"));
     }
 
-    @Tag(name = "Delivery Operations")
-    @Operation(
-            summary = "Mark order as picked up",
-            description = "Mark order as picked up by delivery driver. Requires DELIVERY_DRIVER role. Only READY orders can be picked up.",
-            security = @SecurityRequirement(name = "Bearer Authentication")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Order marked as picked up",
-                    content = @Content(schema = @Schema(implementation = Order.class))
-            ),
-            @ApiResponse(responseCode = "400", description = "Order cannot be picked up (not in READY status)"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
-    })
-    @PutMapping("/{id}/picked-up")
-    public ResponseEntity<?> markOrderPickedUp(
-            @Parameter(description = "Order ID", example = "1")
-            @PathVariable Long id) {
-        Order order = orderService.markOrderPickedUp(id);
-        return ResponseEntity.ok(order);
-    }
-
-    @Tag(name = "Delivery Operations")
-    @Operation(
-            summary = "Mark order as delivered",
-            description = "Mark order as delivered to customer. Requires DELIVERY_DRIVER role. Only PICKED_UP orders can be marked as delivered.",
-            security = @SecurityRequirement(name = "Bearer Authentication")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Order marked as delivered",
-                    content = @Content(schema = @Schema(implementation = Order.class))
-            ),
-            @ApiResponse(responseCode = "400", description = "Order cannot be delivered (not in PICKED_UP status)"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
-    })
-    @PutMapping("/{id}/delivered")
-    public ResponseEntity<?> markOrderDelivered(
-            @Parameter(description = "Order ID", example = "1")
-            @PathVariable Long id) {
-        Order order = orderService.markOrderDelivered(id);
-        return ResponseEntity.ok(order);
-    }
-
     @Operation(
             summary = "Get order status",
             description = "Get current status of an order. Requires authentication.",

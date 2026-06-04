@@ -35,10 +35,10 @@ public class Order {
     @Column(name = "status", nullable = false)
     private OrderStatus status;
 
-    @Column(name = "totalPrice", nullable = false)
+    @Column(name = "total_price", nullable = false)
     private BigDecimal totalPrice;
 
-    @Column(name = "rejectionReason")
+    @Column(name = "rejection_reason")
     private String rejectionReason;
 
     @CreationTimestamp

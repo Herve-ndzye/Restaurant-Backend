@@ -30,7 +30,21 @@ public class AuthController {
 
     @Operation(
             summary = "Register a new user",
-            description = "Create a new user account with specified role. Available roles: CUSTOMER, RESTAURANT_ADMIN, KITCHEN_STAFF, DELIVERY_DRIVER"
+            description = """
+                    Create a new user account with specified role.
+                    
+                    **Available roles:**
+                    - CUSTOMER: End user who places orders
+                    - RESTAURANT_ADMIN: Manages restaurant menu and settings
+                    - KITCHEN_STAFF: Processes orders in the kitchen
+                    - DELIVERY_DRIVER: Delivers orders to customers
+                    
+                    **Optional linking fields (customerId, restaurantId):**
+                    - Only provide these if linking an existing Customer/Restaurant profile to a new User account
+                    - For new customers: Omit customerId - you'll create the Customer profile separately via /api/customer/register
+                    - For restaurant staff: Provide restaurantId to link staff to their restaurant
+                    - Most registrations should leave these fields null/omitted
+                    """
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -39,7 +53,9 @@ public class AuthController {
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = AuthResponse.class),
-                            examples = @ExampleObject(value = """
+                            examples = @ExampleObject(
+                                    name = "Successful registration",
+                                    value = """
                                     {
                                       "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                                       "id": 1,
@@ -55,11 +71,32 @@ public class AuthController {
                     description = "Invalid input or user already exists",
                     content = @Content(
                             mediaType = "application/json",
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "error": "Username already exists"
-                                    }
-                                    """)
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Username exists",
+                                            value = """
+                                            {
+                                              "error": "Username already exists"
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Email exists",
+                                            value = """
+                                            {
+                                              "error": "Email already exists"
+                                            }
+                                            """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Invalid password",
+                                            value = """
+                                            {
+                                              "error": "Password must contain at least one digit, one lowercase, one uppercase, and one special character"
+                                            }
+                                            """
+                                    )
+                            }
                     )
             )
     })

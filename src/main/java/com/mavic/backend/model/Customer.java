@@ -1,5 +1,6 @@
 package com.mavic.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -35,6 +36,7 @@ public class Customer {
     @Column(name = "created_at",nullable = false,updatable = false)
     private LocalDateTime createdAt;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "customer")
     private Set<Order> orders = new LinkedHashSet<>();
 

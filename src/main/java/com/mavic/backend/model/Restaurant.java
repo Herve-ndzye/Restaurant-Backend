@@ -26,7 +26,7 @@ public class Restaurant {
     private String address;
 
     @ColumnDefault("1")
-    @Column(name = "isOpen")
+    @Column(name = "is_open")
     private Boolean isOpen;
 
 }

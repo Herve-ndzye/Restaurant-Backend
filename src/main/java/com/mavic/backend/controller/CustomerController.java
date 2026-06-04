@@ -165,13 +165,28 @@ public class CustomerController {
 
     @Operation(
             summary = "Get all customers (paginated)",
-            description = "Retrieve paginated list of all customers. Admin operation.",
+            description = "Retrieve paginated list of all customers. **RESTAURANT_ADMIN ONLY** - Customers cannot view other customers' information.",
             security = @SecurityRequirement(name = "Bearer Authentication")
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
                     description = "Customers retrieved successfully"
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Access denied - Customers cannot view all customer profiles. This endpoint is restricted to restaurant administrators only.",
+                    content = @Content(
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "timestamp": "2026-06-04T10:15:30.123+00:00",
+                                      "status": 403,
+                                      "error": "Forbidden",
+                                      "message": "Access Denied",
+                                      "path": "/api/customer"
+                                    }
+                                    """)
+                    )
             ),
             @ApiResponse(responseCode = "404", description = "No customers found")
     })

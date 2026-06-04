@@ -40,7 +40,7 @@ public class Menuitem {
     private Category category;
 
     @ColumnDefault("1")
-    @Column(name = "isAvailable")
+    @Column(name = "is_available")
     private Boolean isAvailable;
 
     @JsonIgnore

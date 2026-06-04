@@ -69,8 +69,9 @@ public class SecurityConfig {
                         // Swagger/OpenAPI endpoints
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-                        // Customer endpoints
-                        .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
+                        // Customer endpoints - specific before general
+                        .requestMatchers(HttpMethod.GET, "/api/customer").hasRole("RESTAURANT_ADMIN")  // Only restaurant admins can list all customers
+                        .requestMatchers("/api/customer/**").hasRole("CUSTOMER")  // Customers can manage their own profiles
                         .requestMatchers(HttpMethod.POST, "/api/orders").hasRole("CUSTOMER")
                         .requestMatchers(HttpMethod.DELETE, "/api/orders/**").hasRole("CUSTOMER")
                         .requestMatchers(HttpMethod.GET, "/api/orders/customer/**").hasRole("CUSTOMER")
@@ -84,14 +85,34 @@ public class SecurityConfig {
                         .requestMatchers("/api/kitchen/**").hasRole("KITCHEN_STAFF")
 
                         // Delivery Driver endpoints
-                        .requestMatchers(HttpMethod.PUT, "/api/orders/*/picked-up").hasRole("DELIVERY_DRIVER")
-                        .requestMatchers(HttpMethod.PUT, "/api/orders/*/delivered").hasRole("DELIVERY_DRIVER")
+                        .requestMatchers(HttpMethod.PUT, "/api/delivery/orders/*/picked-up").hasRole("DELIVERY_DRIVER")
+                        .requestMatchers(HttpMethod.PUT, "/api/delivery/orders/*/delivered").hasRole("DELIVERY_DRIVER")
 
                         // All other requests require authentication
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .exceptionHandling(exception -> exception
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(403);
+                            response.getWriter().write(String.format(
+                                """
+                                {
+                                  "timestamp": "%s",
+                                  "status": 403,
+                                  "error": "Forbidden",
+                                  "message": "Access Denied: You do not have permission to access this resource. %s",
+                                  "path": "%s"
+                                }
+                                """,
+                                java.time.LocalDateTime.now().toString(),
+                                accessDeniedException.getMessage(),
+                                request.getRequestURI()
+                            ));
+                        })
                 )
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)

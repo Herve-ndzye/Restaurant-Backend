@@ -31,28 +31,28 @@ public class User {
     @Column(name = "role", nullable = false)
     private UserRole role;
 
-    @Column(name = "isActive", nullable = false)
+    @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
     @CreationTimestamp
-    @Column(name = "createdAt", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     // Optional: Link to Customer, Restaurant, etc.
-    @Column(name = "customerId")
+    @Column(name = "customer_id")
     private Long customerId;
 
-    @Column(name = "restaurantId")
+    @Column(name = "restaurant_id")
     private Long restaurantId;
 
     // Account lockout fields
-    @Column(name = "failedLoginAttempts", nullable = false)
+    @Column(name = "failed_login_attempts", nullable = false)
     private Integer failedLoginAttempts = 0;
 
-    @Column(name = "accountLockedUntil")
+    @Column(name = "account_locked_until")
     private LocalDateTime accountLockedUntil;
 
-    @Column(name = "lastFailedLogin")
+    @Column(name = "last_failed_login")
     private LocalDateTime lastFailedLogin;
 
     /**
