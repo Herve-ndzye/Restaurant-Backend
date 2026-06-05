@@ -45,6 +45,20 @@ public class User {
     @Column(name = "restaurant_id")
     private Long restaurantId;
 
+    // Profile fields for users without separate profile tables
+    @Column(name = "name", length = 100)
+    private String name;
+
+    @Column(name = "phone", length = 20)
+    private String phone;
+
+    // Delivery driver specific fields
+    @Column(name = "vehicle_type", length = 50)
+    private String vehicleType;
+
+    @Column(name = "vehicle_number", length = 20)
+    private String vehicleNumber;
+
     // Account lockout fields
     @Column(name = "failed_login_attempts", nullable = false)
     private Integer failedLoginAttempts = 0;
@@ -54,6 +68,10 @@ public class User {
 
     @Column(name = "last_failed_login")
     private LocalDateTime lastFailedLogin;
+
+    // First login flag for admin invitations
+    @Column(name = "first_login", nullable = false)
+    private Boolean firstLogin = false;
 
     /**
      * Check if account is currently locked

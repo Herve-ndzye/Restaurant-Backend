@@ -85,26 +85,23 @@ public class OpenApiConfig {
                                         .description("Enter JWT token obtained from login endpoint")))
                 .tags(Arrays.asList(
                         new Tag()
-                                .name("Authentication")
-                                .description("User registration and login endpoints"),
+                                .name("1. Authentication")
+                                .description("Registration and login for all user roles"),
                         new Tag()
-                                .name("Restaurants")
-                                .description("Browse restaurants and menus (public access)"),
+                                .name("2. Customer")
+                                .description("Customer profile management and order operations"),
                         new Tag()
-                                .name("Menu Management")
-                                .description("Restaurant admin operations for managing menu items"),
+                                .name("3. Kitchen Staff")
+                                .description("Kitchen order management and preparation workflow"),
                         new Tag()
-                                .name("Customer Orders")
-                                .description("Customer operations for placing and tracking orders"),
+                                .name("4. Delivery Driver")
+                                .description("Order pickup and delivery tracking"),
                         new Tag()
-                                .name("Customer Profile")
-                                .description("Customer profile management"),
+                                .name("5. Admin")
+                                .description("Customer management, menu management, and admin invitations"),
                         new Tag()
-                                .name("Kitchen Operations")
-                                .description("Kitchen staff operations for managing orders"),
-                        new Tag()
-                                .name("Delivery Operations")
-                                .description("Delivery driver operations for order fulfillment")
+                                .name("6. Public - Restaurants")
+                                .description("Browse restaurants and menus (public access)")
                 ));
     }
 }

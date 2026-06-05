@@ -1,7 +1,5 @@
 package com.mavic.backend.customer.service;
 
-import com.mavic.backend.customer.mapper.CustomerMapper;
-import com.mavic.backend.customer.dto.NewCustomerDto;
 import com.mavic.backend.customer.dto.ProfileUpdateDto;
 import com.mavic.backend.customer.exception.CustomerException;
 import com.mavic.backend.customer.model.Customer;
@@ -21,26 +19,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class CustomerService {
 
-    private final CustomerMapper customerMapper;
     private final CustomerRepository customerRepository;
-    private final SecurityUtils securityUtils;
     private final UserRepository userRepository;
-
-    public Customer register(NewCustomerDto customer) {
-        if(customerRepository.findCustomerByPhone(customer.getPhone()).isPresent()) throw new CustomerException("Customer already exist");
-        var newCustomer = customerMapper.toCustomer(customer);
-        customerRepository.save(newCustomer);
-        
-        try {
-            User currentUser = securityUtils.getCurrentUser();
-            currentUser.setCustomerId(newCustomer.getId());
-            userRepository.save(currentUser);
-        } catch (Exception e) {
-            // Log or ignore if called out of authenticated context
-        }
-        
-        return newCustomer;
-    }
+    private final SecurityUtils securityUtils;
 
     public Customer getCustomer(Long id) {
         // Validate ownership: customers can only view their own profile
@@ -87,6 +68,37 @@ public class CustomerService {
         var customer = customerRepository.getCustomersById(id).orElse(null);
         if(customer == null) throw new CustomerException("Customer does not Exist");
         customerRepository.delete(customer);
+    }
+
+    /**
+     * Deactivate customer account
+     * Sets User.isActive = false, preventing login while preserving all data
+     */
+    public void deactivateCustomer(Long id) {
+        // Validate ownership: customers can only deactivate their own account
+        if (!securityUtils.isCustomerOwner(id)) {
+            throw new AccessDeniedException("You can only deactivate your own account");
+        }
+        
+        // Get customer to verify it exists
+        var customer = customerRepository.getCustomersById(id).orElse(null);
+        if(customer == null) {
+            throw new CustomerException("Customer does not exist");
+        }
+        
+        // Get the user account linked to this customer
+        User user = securityUtils.getCurrentUser();
+        
+        // Check if account is already deactivated
+        if (!user.getIsActive()) {
+            throw new CustomerException("Account is already deactivated");
+        }
+        
+        // Deactivate the user account
+        user.setIsActive(false);
+        userRepository.save(user);
+        
+        // Note: Customer profile and order history are preserved
     }
 
     public Page<Customer> getAllCustomers(int page, int size) {

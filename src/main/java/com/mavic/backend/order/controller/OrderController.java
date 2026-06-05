@@ -26,7 +26,7 @@ import java.util.Map;
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/orders")
-@Tag(name = "Customer Orders", description = "Customer operations for placing and tracking orders")
+@Tag(name = "2. Customer", description = "Customer profile management and order operations")
 public class OrderController {
     private final OrderService orderService;
 

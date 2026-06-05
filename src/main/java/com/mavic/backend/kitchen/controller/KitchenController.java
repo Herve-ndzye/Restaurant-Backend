@@ -25,7 +25,7 @@ import java.util.Map;
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/kitchen")
-@Tag(name = "Kitchen Operations", description = "Kitchen staff operations for managing orders")
+@Tag(name = "3. Kitchen Staff", description = "Kitchen order management and preparation workflow")
 public class KitchenController {
     private final OrderService orderService;
 

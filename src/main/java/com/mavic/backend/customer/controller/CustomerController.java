@@ -26,45 +26,9 @@ import java.util.Map;
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/customer")
-@Tag(name = "Customer Profile", description = "Customer profile management operations")
+@Tag(name = "2. Customer", description = "Customer profile management and order operations")
 public class CustomerController {
     private CustomerService customerService;
-
-    @Operation(
-            summary = "Register new customer",
-            description = "Create a new customer profile. This is separate from user authentication registration.",
-            security = @SecurityRequirement(name = "Bearer Authentication")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "Customer registered successfully",
-                    content = @Content(schema = @Schema(implementation = Customer.class))
-            ),
-            @ApiResponse(responseCode = "400", description = "Invalid input or customer already exists")
-    })
-    @PostMapping("/register")
-    public ResponseEntity<?> registerCustomer(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Customer details",
-                    content = @Content(
-                            schema = @Schema(implementation = NewCustomerDto.class),
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "name": "John Doe",
-                                      "phone": "+1234567890",
-                                      "address": "123 Main St, City, State 12345"
-                                    }
-                                    """)
-                    )
-            )
-            @Valid @RequestBody NewCustomerDto customer,
-            UriComponentsBuilder uriBuilder
-    ){
-        var newCustomer = customerService.register(customer);
-        var uri =uriBuilder.path("/customers/{id}").buildAndExpand(newCustomer.getId()).toUri();
-        return ResponseEntity.created(uri).body(newCustomer);
-    }
 
     @Operation(
             summary = "Get customer profile",
@@ -131,76 +95,57 @@ public class CustomerController {
     }
 
     @Operation(
-            summary = "Delete customer profile",
-            description = "Delete customer profile. Requires CUSTOMER role. Customer can only delete their own profile.",
+            summary = "Deactivate customer account",
+            description = """
+                    Deactivate customer account (soft delete). This prevents the customer from logging in while preserving:
+                    - Customer profile data
+                    - Order history
+                    - All related records
+                    
+                    The account can be reactivated by an administrator if needed. Requires CUSTOMER role. Customer can only deactivate their own account.
+                    """,
             security = @SecurityRequirement(name = "Bearer Authentication")
     )
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "200",
-                    description = "Customer deleted successfully",
+                    description = "Account deactivated successfully",
                     content = @Content(
                             examples = @ExampleObject(value = """
                                     {
-                                      "Message": "Customer deleted Successfully."
+                                      "message": "Account deactivated successfully. All your data has been preserved."
                                     }
                                     """)
                     )
             ),
-            @ApiResponse(responseCode = "403", description = "Not authorized to delete this profile"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Account is already deactivated",
+                    content = @Content(
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "error": "Account is already deactivated"
+                                    }
+                                    """)
+                    )
+            ),
+            @ApiResponse(responseCode = "403", description = "Not authorized to deactivate this account"),
             @ApiResponse(responseCode = "404", description = "Customer not found")
     })
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteCustomer(
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<?> deactivateCustomer(
             @Parameter(description = "Customer ID", example = "1")
             @PathVariable("id") Long id
     ){
-        customerService.deleteCustomer(id);
-        return ResponseEntity
-                .status(200)
-                .body(
-                        Map.of("Message", "Customer deleted Successfully.")
-                );
-    }
-
-    @Operation(
-            summary = "Get all customers (paginated)",
-            description = "Retrieve paginated list of all customers. **RESTAURANT_ADMIN ONLY** - Customers cannot view other customers' information.",
-            security = @SecurityRequirement(name = "Bearer Authentication")
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Customers retrieved successfully"
-            ),
-            @ApiResponse(
-                    responseCode = "403",
-                    description = "Access denied - Customers cannot view all customer profiles. This endpoint is restricted to restaurant administrators only.",
-                    content = @Content(
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "timestamp": "2026-06-04T10:15:30.123+00:00",
-                                      "status": 403,
-                                      "error": "Forbidden",
-                                      "message": "Access Denied",
-                                      "path": "/api/customer"
-                                    }
-                                    """)
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "No customers found")
-    })
-    @GetMapping
-    public ResponseEntity<?> getAllCustomers(
-            @Parameter(description = "Page number (0-indexed)", example = "0")
-            @RequestParam("page") int page,
-            @Parameter(description = "Page size", example = "10")
-            @RequestParam("size") int size
-    ){
-        var customers = customerService.getAllCustomers(page,size);
+        customerService.deactivateCustomer(id);
         return ResponseEntity
                 .ok()
-                .body(customers);
+                .body(
+                        Map.of(
+                                "message", "Account deactivated successfully. All your data has been preserved.",
+                                "note", "Contact support if you wish to reactivate your account"
+                        )
+                );
     }
 
     @ExceptionHandler(CustomerException.class)

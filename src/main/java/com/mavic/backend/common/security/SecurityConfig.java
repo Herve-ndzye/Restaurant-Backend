@@ -71,16 +71,20 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
                         // Customer endpoints - specific before general
-                        .requestMatchers(HttpMethod.GET, "/api/customer").hasRole("RESTAURANT_ADMIN")  // Only restaurant admins can list all customers
                         .requestMatchers("/api/customer/**").hasRole("CUSTOMER")  // Customers can manage their own profiles
+                        
+                        // Admin - Customer Management
+                        .requestMatchers("/api/admin/customers/**").hasRole("RESTAURANT_ADMIN")  // Only restaurant admins can manage all customers
+                        .requestMatchers("/api/admin/create-admin").hasRole("RESTAURANT_ADMIN")  // Only restaurant admins can create admin invitations
+                        
+                        // Admin - Menu Management
+                        .requestMatchers(HttpMethod.POST, "/api/admin/restaurants/*/menu").hasRole("RESTAURANT_ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/admin/restaurants/menu/**").hasRole("RESTAURANT_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/admin/restaurants/menu/**").hasRole("RESTAURANT_ADMIN")
+                        
                         .requestMatchers(HttpMethod.POST, "/api/orders").hasRole("CUSTOMER")
                         .requestMatchers(HttpMethod.DELETE, "/api/orders/**").hasRole("CUSTOMER")
                         .requestMatchers(HttpMethod.GET, "/api/orders/customer/**").hasRole("CUSTOMER")
-
-                        // Restaurant Admin endpoints
-                        .requestMatchers(HttpMethod.POST, "/api/restaurants/*/menu").hasRole("RESTAURANT_ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/restaurants/menu/**").hasRole("RESTAURANT_ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/restaurants/menu/**").hasRole("RESTAURANT_ADMIN")
 
                         // Kitchen Staff endpoints
                         .requestMatchers("/api/kitchen/**").hasRole("KITCHEN_STAFF")

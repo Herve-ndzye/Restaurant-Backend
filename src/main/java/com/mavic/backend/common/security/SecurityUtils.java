@@ -11,14 +11,14 @@ import org.springframework.stereotype.Component;
 @Component
 @AllArgsConstructor
 public class SecurityUtils {
-    private final UserRepository userRepository;
+    private static UserRepository userRepository;
 
     /**
      * Get the currently authenticated user
      * @return User entity
      * @throws UsernameNotFoundException if user not found
      */
-    public User getCurrentUser() {
+    public static User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         
         if (authentication == null || !authentication.isAuthenticated() || 
