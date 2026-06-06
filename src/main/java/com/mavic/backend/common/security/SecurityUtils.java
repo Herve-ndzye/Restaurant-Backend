@@ -3,6 +3,7 @@ package com.mavic.backend.common.security;
 import com.mavic.backend.auth.model.User;
 import com.mavic.backend.auth.repository.UserRepository;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -11,14 +12,14 @@ import org.springframework.stereotype.Component;
 @Component
 @AllArgsConstructor
 public class SecurityUtils {
-    private static UserRepository userRepository;
+    private  UserRepository userRepository;
 
     /**
      * Get the currently authenticated user
      * @return User entity
      * @throws UsernameNotFoundException if user not found
      */
-    public static User getCurrentUser() {
+    public  User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         
         if (authentication == null || !authentication.isAuthenticated() || 
@@ -30,6 +31,7 @@ public class SecurityUtils {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
+
 
     /**
      * Get the ID of the currently authenticated user

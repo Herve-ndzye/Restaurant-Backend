@@ -60,13 +60,13 @@ public class User {
     private String vehicleNumber;
 
     // Account lockout fields
-    @Column(name = "failed_login_attempts", nullable = false)
+    @Column(name = "failedLoginAttempts", nullable = false)
     private Integer failedLoginAttempts = 0;
 
-    @Column(name = "account_locked_until")
+    @Column(name = "accountLockedUntil")
     private LocalDateTime accountLockedUntil;
 
-    @Column(name = "last_failed_login")
+    @Column(name = "lastFailedLogin")
     private LocalDateTime lastFailedLogin;
 
     // First login flag for admin invitations

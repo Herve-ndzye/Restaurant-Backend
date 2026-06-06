@@ -4,6 +4,7 @@ import com.mavic.backend.auth.dto.*;
 import com.mavic.backend.auth.exception.AccountLockedException;
 import com.mavic.backend.auth.model.User;
 import com.mavic.backend.auth.repository.UserRepository;
+import com.mavic.backend.common.service.EmailService;
 import com.mavic.backend.customer.model.Customer;
 import com.mavic.backend.customer.repository.CustomerRepository;
 import com.mavic.backend.restaurant.repository.RestaurantRepository;
@@ -13,6 +14,7 @@ import com.mavic.backend.common.security.JwtUtil;
 import com.mavic.backend.common.security.SecurityUtils;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,6 +28,8 @@ import java.security.SecureRandom;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
+
 public class AuthService {
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
@@ -33,7 +37,8 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
-    private final com.mavic.backend.common.service.EmailService emailService;
+    private final EmailService emailService;
+    private final SecurityUtils securityUtils;
 
     @Value("${admin.invite-code:ADMIN-SECRET-2026}")
     private String adminInviteCode;
@@ -42,22 +47,6 @@ public class AuthService {
     private static final int MAX_FAILED_ATTEMPTS = 5;
     private static final int LOCKOUT_DURATION_MINUTES = 15;
 
-    public AuthService(
-            UserRepository userRepository,
-            CustomerRepository customerRepository,
-            RestaurantRepository restaurantRepository,
-            PasswordEncoder passwordEncoder,
-            JwtUtil jwtUtil,
-            AuthenticationManager authenticationManager,
-            com.mavic.backend.common.service.EmailService emailService) {
-        this.userRepository = userRepository;
-        this.customerRepository = customerRepository;
-        this.restaurantRepository = restaurantRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
-        this.authenticationManager = authenticationManager;
-        this.emailService = emailService;
-    }
 
     /**
      * Register a new CUSTOMER with profile information
@@ -401,7 +390,7 @@ public class AuthService {
     @Transactional
     public AdminInvitationResponse createAdminInvitation(CreateAdminRequest request) {
         // Validate that current user is RESTAURANT_ADMIN
-        User currentUser = SecurityUtils.getCurrentUser();
+        User currentUser = securityUtils.getCurrentUser();
         if (currentUser.getRole() != UserRole.RESTAURANT_ADMIN) {
             throw new RuntimeException("Only restaurant administrators can create admin accounts");
         }
@@ -477,7 +466,7 @@ public class AuthService {
     @Transactional
     public void changePassword(ChangePasswordRequest request) {
         // Get current authenticated user
-        User currentUser = SecurityUtils.getCurrentUser();
+        User currentUser = securityUtils.getCurrentUser();
 
         // Validate current password
         if (!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPassword())) {

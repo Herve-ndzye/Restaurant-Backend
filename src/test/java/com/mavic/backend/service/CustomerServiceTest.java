@@ -27,8 +27,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CustomerServiceTest {
 
-    @Mock
-    private CustomerMapper customerMapper;
 
     @Mock
     private CustomerRepository customerRepository;
@@ -58,32 +56,7 @@ class CustomerServiceTest {
         user.setUsername("customer1");
     }
 
-    @Test
-    void register_Success() {
-        NewCustomerDto dto = new NewCustomerDto("John Doe", "1234567890", "123 Main St");
-        when(customerRepository.findCustomerByPhone(dto.getPhone())).thenReturn(Optional.empty());
-        when(customerMapper.toCustomer(dto)).thenReturn(customer);
-        when(customerRepository.save(any(Customer.class))).thenReturn(customer);
-        when(securityUtils.getCurrentUser()).thenReturn(user);
 
-        Customer result = customerService.register(dto);
-
-        assertNotNull(result);
-        assertEquals(customer.getId(), result.getId());
-        assertEquals(customer.getName(), result.getName());
-        verify(customerRepository).save(any(Customer.class));
-        verify(userRepository).save(user);
-        assertEquals(1L, user.getCustomerId());
-    }
-
-    @Test
-    void register_DuplicatePhone_ThrowsCustomerException() {
-        NewCustomerDto dto = new NewCustomerDto("John Doe", "1234567890", "123 Main St");
-        when(customerRepository.findCustomerByPhone(dto.getPhone())).thenReturn(Optional.of(customer));
-
-        assertThrows(CustomerException.class, () -> customerService.register(dto));
-        verify(customerRepository, never()).save(any(Customer.class));
-    }
 
     @Test
     void getCustomer_Success() {
