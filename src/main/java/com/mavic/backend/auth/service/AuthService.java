@@ -2,6 +2,7 @@ package com.mavic.backend.auth.service;
 
 import com.mavic.backend.auth.dto.*;
 import com.mavic.backend.auth.exception.AccountLockedException;
+import com.mavic.backend.auth.exception.AuthException;
 import com.mavic.backend.auth.model.User;
 import com.mavic.backend.auth.repository.UserRepository;
 import com.mavic.backend.common.service.EmailService;
@@ -17,6 +18,7 @@ import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.LockedException;
@@ -106,19 +108,25 @@ public class AuthService {
     @AuditLog(action = "KITCHEN_STAFF_REGISTRATION")
     @Transactional
     public AuthResponse registerKitchenStaff(RegisterKitchenStaffRequest request) {
-        // Check if username already exists
+        assertRestaurantAdminCaller();
+
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new AuthException(
+                    "Username '" + request.getUsername() + "' is already taken.",
+                    HttpStatus.CONFLICT
+            );
         }
-
-        // Check if email already exists
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new AuthException(
+                    "Email '" + request.getEmail() + "' is already registered.",
+                    HttpStatus.CONFLICT
+            );
         }
-
-        // Validate restaurant exists
         if (!restaurantRepository.existsById(request.getRestaurantId())) {
-            throw new RuntimeException("Restaurant not found with ID: " + request.getRestaurantId());
+            throw new AuthException(
+                    "Restaurant with ID " + request.getRestaurantId() + " was not found.",
+                    HttpStatus.NOT_FOUND
+            );
         }
 
         // Create user account
@@ -152,14 +160,19 @@ public class AuthService {
     @AuditLog(action = "DELIVERY_DRIVER_REGISTRATION")
     @Transactional
     public AuthResponse registerDeliveryDriver(RegisterDeliveryDriverRequest request) {
-        // Check if username already exists
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
-        }
+        assertRestaurantAdminCaller();
 
-        // Check if email already exists
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new AuthException(
+                    "Username '" + request.getUsername() + "' is already taken.",
+                    HttpStatus.CONFLICT
+            );
+        }
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new AuthException(
+                    "Email '" + request.getEmail() + "' is already registered.",
+                    HttpStatus.CONFLICT
+            );
         }
 
         // Create user account with driver information
@@ -389,25 +402,33 @@ public class AuthService {
     @AuditLog(action = "CREATE_ADMIN_INVITATION")
     @Transactional
     public AdminInvitationResponse createAdminInvitation(CreateAdminRequest request) {
-        // Validate that current user is RESTAURANT_ADMIN
         User currentUser = securityUtils.getCurrentUser();
         if (currentUser.getRole() != UserRole.RESTAURANT_ADMIN) {
-            throw new RuntimeException("Only restaurant administrators can create admin accounts");
+            throw new AuthException(
+                    "Only restaurant administrators can create admin invitations",
+                    HttpStatus.FORBIDDEN
+            );
         }
 
-        // Check if username already exists
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new AuthException(
+                    "Username '" + request.getUsername() + "' is already taken. Please choose a different username.",
+                    HttpStatus.CONFLICT
+            );
         }
 
-        // Check if email already exists
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new AuthException(
+                    "Email '" + request.getEmail() + "' is already registered. Please use a different email address.",
+                    HttpStatus.CONFLICT
+            );
         }
 
-        // Validate restaurant if provided
         if (request.getRestaurantId() != null && !restaurantRepository.existsById(request.getRestaurantId())) {
-            throw new RuntimeException("Restaurant not found with ID: " + request.getRestaurantId());
+            throw new AuthException(
+                    "Restaurant with ID " + request.getRestaurantId() + " was not found. Please verify the restaurant ID.",
+                    HttpStatus.NOT_FOUND
+            );
         }
 
         // Generate temporary password
@@ -431,20 +452,25 @@ public class AuthService {
 
         log.info("Admin invitation created by {} for new admin: {}", currentUser.getUsername(), newAdmin.getUsername());
 
-        // Send invitation email with credentials
-        try {
-            emailService.sendAdminInvitationEmail(
-                    newAdmin.getEmail(),
-                    newAdmin.getName(),
-                    newAdmin.getUsername(),
-                    temporaryPassword,
-                    currentUser.getName() != null ? currentUser.getName() : currentUser.getUsername()
-            );
+        boolean invitationEmailSent = emailService.sendAdminInvitationEmail(
+                newAdmin.getEmail(),
+                newAdmin.getName(),
+                newAdmin.getUsername(),
+                temporaryPassword,
+                currentUser.getName() != null ? currentUser.getName() : currentUser.getUsername()
+        );
+
+        if (invitationEmailSent) {
             log.info("Invitation email sent to: {}", newAdmin.getEmail());
-        } catch (Exception e) {
-            log.error("Failed to send invitation email to {}: {}", newAdmin.getEmail(), e.getMessage());
-            // Continue even if email fails - admin can still share credentials manually
+        } else {
+            log.warn("Invitation email was not sent to {}. Manual credential sharing may be required.", newAdmin.getEmail());
         }
+
+        String invitationMessage = invitationEmailSent
+                ? "Admin account created successfully. Invitation email has been sent to " + newAdmin.getEmail() +
+                ". You can also share these credentials manually if needed."
+                : "Admin account created successfully, but the invitation email could not be sent to " + newAdmin.getEmail() +
+                ". Please share the temporary credentials manually.";
 
         // Return invitation details with temporary credentials
         return new AdminInvitationResponse(
@@ -453,8 +479,7 @@ public class AuthService {
                 newAdmin.getEmail(),
                 temporaryPassword,
                 "/api/auth/login", // Login endpoint
-                "Admin account created successfully. Invitation email has been sent to " + newAdmin.getEmail() + 
-                ". You can also share these credentials manually if needed.",
+                invitationMessage,
                 true
         );
     }
@@ -470,17 +495,13 @@ public class AuthService {
 
         // Validate current password
         if (!passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPassword())) {
-            throw new RuntimeException("Current password is incorrect");
+            throw new AuthException("Current password is incorrect.");
         }
-
-        // Validate new password matches confirmation
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new RuntimeException("New password and confirmation do not match");
+            throw new AuthException("New password and confirmation do not match.");
         }
-
-        // Validate new password is different from current
         if (passwordEncoder.matches(request.getNewPassword(), currentUser.getPassword())) {
-            throw new RuntimeException("New password must be different from current password");
+            throw new AuthException("New password must be different from current password.");
         }
 
         // Update password and clear firstLogin flag
@@ -496,6 +517,16 @@ public class AuthService {
         } catch (Exception e) {
             log.error("Failed to send password change confirmation email: {}", e.getMessage());
             // Don't fail the operation if email fails
+        }
+    }
+
+    private void assertRestaurantAdminCaller() {
+        User currentUser = securityUtils.getCurrentUser();
+        if (currentUser.getRole() != UserRole.RESTAURANT_ADMIN) {
+            throw new AuthException(
+                    "Only restaurant administrators can register staff accounts.",
+                    HttpStatus.FORBIDDEN
+            );
         }
     }
 

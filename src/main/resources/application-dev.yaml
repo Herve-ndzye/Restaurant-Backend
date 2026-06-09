@@ -1,0 +1,22 @@
+spring:
+  jpa:
+    show-sql: true
+
+jwt:
+  secret: ${JWT_SECRET:dev-jwt-secret-key-that-is-at-least-256-bits-long-for-hs256-algorithm}
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+logging:
+  level:
+    com.mavic.backend: DEBUG

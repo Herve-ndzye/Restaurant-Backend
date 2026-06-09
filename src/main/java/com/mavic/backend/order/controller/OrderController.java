@@ -1,14 +1,13 @@
 package com.mavic.backend.order.controller;
 
-import com.mavic.backend.order.dto.OrderRequest;
-import com.mavic.backend.order.exception.OrderException;
-import com.mavic.backend.order.model.Order;
-import com.mavic.backend.order.service.OrderService;
 import com.mavic.backend.common.enums.OrderStatus;
+import com.mavic.backend.order.dto.OrderRequest;
+import com.mavic.backend.order.dto.OrderResponse;
+import com.mavic.backend.order.mapper.OrderMapper;
+import com.mavic.backend.order.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -16,168 +15,79 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/orders")
-@Tag(name = "2. Customer", description = "Customer profile management and order operations")
+@Tag(name = "2. Customer", description = "Customer orders and order tracking")
 public class OrderController {
     private final OrderService orderService;
+    private final OrderMapper orderMapper;
 
     @Operation(
             summary = "Place a new order",
-            description = "Create a new order for a customer. Requires CUSTOMER role. Customer can only place orders for their own account.",
+            description = "Create a new order. Requires CUSTOMER role.",
             security = @SecurityRequirement(name = "Bearer Authentication")
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "Order placed successfully",
-                    content = @Content(schema = @Schema(implementation = Order.class))
-            ),
-            @ApiResponse(responseCode = "400", description = "Invalid order data or restaurant closed"),
-            @ApiResponse(responseCode = "403", description = "Not authorized to place order for this customer"),
-            @ApiResponse(responseCode = "404", description = "Customer, restaurant, or menu item not found")
+            @ApiResponse(responseCode = "201", description = "Order placed successfully",
+                    content = @Content(schema = @Schema(implementation = OrderResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid order data"),
+            @ApiResponse(responseCode = "403", description = "Not authorized"),
+            @ApiResponse(responseCode = "404", description = "Resource not found")
     })
     @PostMapping
-    public ResponseEntity<?> placeOrder(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Order details",
-                    content = @Content(
-                            schema = @Schema(implementation = OrderRequest.class),
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "customerId": 1,
-                                      "restaurantId": 1,
-                                      "items": [
-                                        {
-                                          "menuItemId": 1,
-                                          "quantity": 2
-                                        },
-                                        {
-                                          "menuItemId": 3,
-                                          "quantity": 1
-                                        }
-                                      ]
-                                    }
-                                    """)
-                    )
-            )
-            @Valid @RequestBody OrderRequest request) {
-        Order order = orderService.placeOrder(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(order);
+    public ResponseEntity<OrderResponse> placeOrder(@Valid @RequestBody OrderRequest request) {
+        var order = orderService.placeOrder(request);
+        order = orderService.getOrderById(order.getId());
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderMapper.toResponse(order));
     }
 
     @Operation(
             summary = "Get order by ID",
-            description = "Retrieve order details. Customers can only view their own orders. Kitchen staff can view orders for their restaurant.",
             security = @SecurityRequirement(name = "Bearer Authentication")
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Order found",
-                    content = @Content(schema = @Schema(implementation = Order.class))
-            ),
-            @ApiResponse(responseCode = "403", description = "Not authorized to view this order"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
-    })
     @GetMapping("/{id}")
-    public ResponseEntity<?> getOrder(
-            @Parameter(description = "Order ID", example = "1")
-            @PathVariable Long id) {
-        Order order = orderService.getOrderById(id);
-        return ResponseEntity.ok(order);
+    public ResponseEntity<OrderResponse> getOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(orderMapper.toResponse(orderService.getOrderById(id)));
     }
 
     @Operation(
-            summary = "Get customer orders",
-            description = "Retrieve all orders for a specific customer. Requires CUSTOMER role. Customer can only view their own orders.",
+            summary = "Get customer orders (paginated)",
             security = @SecurityRequirement(name = "Bearer Authentication")
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Orders retrieved successfully",
-                    content = @Content(schema = @Schema(implementation = Order.class))
-            ),
-            @ApiResponse(responseCode = "403", description = "Not authorized to view these orders"),
-            @ApiResponse(responseCode = "404", description = "Customer not found")
-    })
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<?> getCustomerOrders(
-            @Parameter(description = "Customer ID", example = "1")
-            @PathVariable Long customerId) {
-        List<Order> orders = orderService.getCustomerOrders(customerId);
+    public ResponseEntity<Page<OrderResponse>> getCustomerOrders(
+            @PathVariable Long customerId,
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size (max 100)") @RequestParam(defaultValue = "10") int size) {
+        Page<OrderResponse> orders = orderService.getCustomerOrders(customerId, page, size)
+                .map(orderMapper::toResponse);
         return ResponseEntity.ok(orders);
     }
 
     @Operation(
             summary = "Cancel order",
-            description = "Cancel a pending order. Requires CUSTOMER role. Only PENDING orders can be cancelled. Customer can only cancel their own orders.",
             security = @SecurityRequirement(name = "Bearer Authentication")
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Order cancelled successfully",
-                    content = @Content(
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "message": "Order cancelled successfully"
-                                    }
-                                    """)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Order cannot be cancelled (not in PENDING status)"),
-            @ApiResponse(responseCode = "403", description = "Not authorized to cancel this order"),
-            @ApiResponse(responseCode = "404", description = "Order not found")
-    })
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> cancelOrder(
-            @Parameter(description = "Order ID", example = "1")
-            @PathVariable Long id) {
+    public ResponseEntity<Map<String, String>> cancelOrder(@PathVariable Long id) {
         orderService.cancelOrder(id);
         return ResponseEntity.ok(Map.of("message", "Order cancelled successfully"));
     }
 
     @Operation(
             summary = "Get order status",
-            description = "Get current status of an order. Requires authentication.",
             security = @SecurityRequirement(name = "Bearer Authentication")
     )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Order status retrieved",
-                    content = @Content(
-                            examples = @ExampleObject(value = """
-                                    {
-                                      "status": "PREPARING"
-                                    }
-                                    """)
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "Order not found")
-    })
     @GetMapping("/{id}/status")
-    public ResponseEntity<?> getOrderStatus(
-            @Parameter(description = "Order ID", example = "1")
-            @PathVariable Long id) {
-        OrderStatus status = orderService.getOrderStatus(id);
-        return ResponseEntity.ok(Map.of("status", status));
-    }
-
-    @ExceptionHandler(OrderException.class)
-    public ResponseEntity<?> handleOrderException(OrderException ex) {
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("error", ex.getMessage()));
+    public ResponseEntity<Map<String, OrderStatus>> getOrderStatus(@PathVariable Long id) {
+        return ResponseEntity.ok(Map.of("status", orderService.getOrderStatus(id)));
     }
 }

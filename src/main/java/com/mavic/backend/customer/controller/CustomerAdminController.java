@@ -2,8 +2,9 @@ package com.mavic.backend.customer.controller;
 
 import com.mavic.backend.auth.dto.AdminInvitationResponse;
 import com.mavic.backend.auth.dto.CreateAdminRequest;
+import com.mavic.backend.auth.dto.RegisterDeliveryDriverRequest;
+import com.mavic.backend.auth.dto.RegisterKitchenStaffRequest;
 import com.mavic.backend.auth.service.AuthService;
-import com.mavic.backend.customer.exception.CustomerException;
 import com.mavic.backend.customer.service.CustomerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,15 +21,33 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
 @AllArgsConstructor
 @RequestMapping("/api/admin")
-@Tag(name = "5. Admin", description = "Customer management, menu management, and admin invitations")
+@Tag(name = "5. Admin", description = "Customer management, menu management, staff registration, and admin invitations")
 public class CustomerAdminController {
     private CustomerService customerService;
     private AuthService authService;
+
+    @Operation(
+            summary = "Register kitchen staff",
+            description = "RESTAURANT_ADMIN ONLY — Create a kitchen staff account linked to a restaurant.",
+            security = @SecurityRequirement(name = "Bearer Authentication")
+    )
+    @PostMapping("/register/kitchen-staff")
+    public ResponseEntity<?> registerKitchenStaff(@Valid @RequestBody RegisterKitchenStaffRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerKitchenStaff(request));
+    }
+
+    @Operation(
+            summary = "Register delivery driver",
+            description = "RESTAURANT_ADMIN ONLY — Create a delivery driver account.",
+            security = @SecurityRequirement(name = "Bearer Authentication")
+    )
+    @PostMapping("/register/delivery-driver")
+    public ResponseEntity<?> registerDeliveryDriver(@Valid @RequestBody RegisterDeliveryDriverRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerDeliveryDriver(request));
+    }
 
     @Operation(
             summary = "Get all customers (paginated)",
@@ -101,7 +120,11 @@ public class CustomerAdminController {
                     content = @Content(
                             examples = @ExampleObject(value = """
                                     {
-                                      "Error": "No Customers Available"
+                                      "timestamp": "2026-06-04T10:15:30.123",
+                                      "status": 404,
+                                      "error": "Not Found",
+                                      "message": "No customers found. The customer database is empty.",
+                                      "path": "/api/admin/customers"
                                     }
                                     """)
                     )
@@ -160,26 +183,20 @@ public class CustomerAdminController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Invalid input or user already exists",
+                    description = "Invalid input data",
                     content = @Content(
-                            examples = {
-                                    @ExampleObject(
-                                            name = "Username exists",
-                                            value = """
-                                            {
-                                              "error": "Username already exists"
-                                            }
-                                            """
-                                    ),
-                                    @ExampleObject(
-                                            name = "Email exists",
-                                            value = """
-                                            {
-                                              "error": "Email already exists"
-                                            }
-                                            """
-                                    )
-                            }
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "timestamp": "2026-06-04T10:15:30.123",
+                                      "status": 400,
+                                      "error": "Validation Failed",
+                                      "message": "Invalid input data",
+                                      "details": {
+                                        "email": "Email must be valid"
+                                      },
+                                      "path": "/api/admin/create-admin"
+                                    }
+                                    """)
                     )
             ),
             @ApiResponse(
@@ -188,7 +205,26 @@ public class CustomerAdminController {
                     content = @Content(
                             examples = @ExampleObject(value = """
                                     {
-                                      "error": "Only restaurant administrators can create admin accounts"
+                                      "timestamp": "2026-06-04T10:15:30.123",
+                                      "status": 403,
+                                      "error": "Access Denied",
+                                      "message": "Only restaurant administrators can create admin invitations",
+                                      "path": "/api/admin/create-admin"
+                                    }
+                                    """)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Username or email already exists",
+                    content = @Content(
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "timestamp": "2026-06-04T10:15:30.123",
+                                      "status": 409,
+                                      "error": "Conflict",
+                                      "message": "Username 'new_admin' is already taken. Please choose a different username.",
+                                      "path": "/api/admin/create-admin"
                                     }
                                     """)
                     )
@@ -211,20 +247,7 @@ public class CustomerAdminController {
                     )
             )
             @Valid @RequestBody CreateAdminRequest request) {
-        try {
-            AdminInvitationResponse response = authService.createAdminInvitation(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (RuntimeException e) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @ExceptionHandler(CustomerException.class)
-    public ResponseEntity<?> handleCustomerException(CustomerException ex){
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("Error", ex.getMessage()));
+        AdminInvitationResponse response = authService.createAdminInvitation(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }

@@ -1,4 +1,8 @@
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  cache:
+    type: simple
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3000}/${DB_NAME:restaurant}?createDatabaseIfNotExist=true
     username: ${DB_USERNAME:root}
@@ -57,4 +61,10 @@ app:
 management:
   health:
     mail:
-      enabled: false  # Disable mail health check when email not configured
+      enabled: false
+    db:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

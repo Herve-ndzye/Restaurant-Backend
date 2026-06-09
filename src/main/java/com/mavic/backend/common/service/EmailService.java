@@ -5,7 +5,7 @@ import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -33,8 +33,7 @@ public class EmailService {
     /**
      * Send admin invitation email with temporary credentials
      */
-    @Async
-    public void sendAdminInvitationEmail(
+    public boolean sendAdminInvitationEmail(
             String toEmail, 
             String adminName, 
             String username, 
@@ -43,7 +42,7 @@ public class EmailService {
         
         if (!emailEnabled || mailSender == null) {
             log.warn("Email service not configured. Skipping invitation email to: {}", toEmail);
-            return;
+            return false;
         }
         
         try {
@@ -65,10 +64,11 @@ public class EmailService {
             
             mailSender.send(message);
             log.info("Admin invitation email sent successfully to: {}", toEmail);
+            return true;
             
-        } catch (MessagingException e) {
+        } catch (MessagingException | MailException e) {
             log.error("Failed to send admin invitation email to: {}", toEmail, e);
-            throw new RuntimeException("Failed to send invitation email: " + e.getMessage());
+            return false;
         }
     }
     
@@ -224,7 +224,7 @@ public class EmailService {
                         </div>
                         
                         <div style="text-align: center;">
-                            <a href="%s/login" class="button">Login Now</a>
+                            <a href="%s" class="button">Login Now</a>
                         </div>
                         
                         <div class="steps">
@@ -256,10 +256,14 @@ public class EmailService {
                 invitedByAdmin,    // Who invited
                 username,          // Username credential
                 temporaryPassword, // Password credential
-                frontendUrl,       // Login button URL
+                buildLoginUrl(),   // Login button URL
                 appName,           // Footer app name 1
                 appName            // Footer app name 2
         );
+    }
+
+    private String buildLoginUrl() {
+        return frontendUrl.endsWith("/login") ? frontendUrl : frontendUrl + "/login";
     }
     
     /**

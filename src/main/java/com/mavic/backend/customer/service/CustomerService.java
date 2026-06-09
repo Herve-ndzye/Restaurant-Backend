@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @AllArgsConstructor
 @Service
@@ -74,6 +75,7 @@ public class CustomerService {
      * Deactivate customer account
      * Sets User.isActive = false, preventing login while preserving all data
      */
+    @Transactional
     public void deactivateCustomer(Long id) {
         // Validate ownership: customers can only deactivate their own account
         if (!securityUtils.isCustomerOwner(id)) {
@@ -108,7 +110,6 @@ public class CustomerService {
                 Sort.by("name").ascending()
         );
         var customers = customerRepository.findAll(pageable);
-        if(customers.isEmpty()) throw new CustomerException("No Customers Available");
         return customers;
     }
 }

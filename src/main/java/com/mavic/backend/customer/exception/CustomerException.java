@@ -1,13 +1,15 @@
 package com.mavic.backend.customer.exception;
 
+import com.mavic.backend.common.exception.BusinessException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
-import java.util.Map;
-
-public class CustomerException extends RuntimeException {
+public class CustomerException extends BusinessException {
 
     public CustomerException(String message) {
         super(message);
+    }
+
+    public CustomerException(String message, HttpStatus status) {
+        super(message, status);
     }
 }
